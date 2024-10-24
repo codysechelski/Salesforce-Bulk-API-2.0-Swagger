@@ -1,0 +1,915 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Salesforce Bulk 2.0 API
+  description: >
+    OpenAPI Documentation for Salesforce's Bulk API
+    (https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_0.htm)
+    version: 0.1.0
+
+servers:
+  - url: https://{salesforceMyDomain}/services/data/{apiVersion}/
+    description: Base URL for Salesforce's API Collections
+    variables:
+      apiVersion:
+        default: v58.0
+        description: Salesforce's API Version
+      salesforceMyDomain:
+        default: mydomain.my.salesforce.com
+        description: Your Salesforce Org's MyDomain
+
+security:
+  - BearerAuth: []
+
+paths:
+  /jobs/ingest:
+    post:
+      summary: Create a Job
+      description: >
+        Creates a job representing a bulk operation and its associated data that
+        is sent to Salesforce for asynchronous processing. Provide job data via
+        an Upload Job Data request or as part of a multipart create job request.
+      tags:
+        - Bulk Ingest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Job"
+            examples:
+              Create Job Simple Insert:
+                $ref: '#/components/examples/createJobSimpleInsert'
+              Create Job Complex Insert:
+                $ref: '#/components/examples/createJobComplexInsert'
+              Create Job Upsert:
+                $ref: '#/components/examples/createJobUpsert'
+      responses:
+        "200":
+          description: Success. Returns an instance of Job Object with a Job Id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+              examples:
+                Create Job responses:
+                  $ref: '#/components/examples/createJobResponse'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+
+  /jobs/ingest/{jobId}/batches:
+    put:
+      summary: Upload Job Data
+      description: >
+        Uploads data for a job using CSV data you provide. Use the Job ID that
+        was returned in the body of the Create Job call.
+      tags:
+        - Bulk Ingest
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+            examples:
+              CSV content:
+                $ref: '#/components/examples/sampleCSVContent'
+      responses:
+        "201":
+          description: >
+            (Created), which indicates that the job data was successfully
+            received by Salesforce.
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+
+  /jobs/ingest/{jobId}/:
+    patch:
+      summary: Upload Complete
+      description: >
+        Notifies Salesforce servers that the upload of job data is complete and
+        is ready for processing. You can’t add any more job data. This request
+        is required for every Bulk API 2.0 ingest job. If you don't make this
+        request, processing of your data does not start.
+      tags:
+        - Bulk Ingest
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadCompleteBody"
+            examples:
+              Upload Complete:
+                $ref: '#/components/examples/uploadCompleteBody'
+      responses:
+        "200":
+          description: >
+            Success. Returns an instance of Job Object with a Job Id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+              examples:
+                Create Job responses:
+                  $ref: '#/components/examples/createJobResponseUploadComplete'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+    get:
+      summary: Get Information About an Ingest Job
+      description: >
+        Retrieves detailed information about a job.
+      tags:
+        - Bulk Ingest
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      responses:
+        "200":
+          description: >
+            Success. Returns an instance of Job Object with a Job Id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+              examples:
+                In Progress:
+                  $ref: '#/components/examples/createJobResponseInProgress'
+                Job Complete:
+                  $ref: '#/components/examples/createJobResponseJobComplete'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+
+  /jobs/ingest/{jobId}/successfulResults:
+    get:
+      summary: Get Job Successful Record Results
+      description: >
+        Retrieves a list of successfully processed records for a completed job
+      tags:
+        - Bulk Ingest
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      responses:
+        "200":
+          description: >
+            The response body is a CSV file that all the records that the job
+            successfully processed. Each row corresponds to a successfully
+            processed record and contains the following information.
+
+            * `sf__Created`
+              * boolean
+              * Indicates if the record was created.
+
+            * `sf__Id`
+              * string
+              * ID of the record that was successfully processed.
+
+            * `Fields from the original CSV request data`
+              * _various_
+              * Field data for the row that was provided in the original job
+                data upload request.
+          content:
+            text/csv:
+              schema:
+                type: string
+              examples:
+                Success Results:
+                  $ref: '#/components/examples/sampleCsvSuccess'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+
+  /jobs/ingest/{jobId}/failedResults:
+    get:
+      summary: Get Job Failed Record Results
+      description: >
+        Retrieves a list of failed records for a completed insert, delete,
+        update, or upsert job.
+      tags:
+        - Bulk Ingest
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      responses:
+        "200":
+          description: >
+            The response body is a CSV file that all the records that
+            encountered an error while being processed by the job. Each row
+            corresponds to a failed record and contains the following
+            information.
+
+            * `sf__Error`
+              * Error
+              * Error code and message.
+
+            * `sf__Id`
+              * string
+              * ID of the record that had an error during processing. Available
+                in API version 53 and later.
+
+            * `Fields from the original CSV request data`
+              * _various_
+              * Field data for the row that was provided in the original job
+                data upload request.
+          content:
+            text/csv:
+              schema:
+                type: string
+              examples:
+                Error Results:
+                  $ref: '#/components/examples/sampleCsvError'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+
+  /jobs/query:
+    post:
+      summary: Create a Query Job
+      description: Creates a query job.
+      tags:
+        - Bulk Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Query"
+            examples:
+              Query:
+                $ref: '#/components/examples/queryBody'
+              Query All - Include Deleted and Archived Records:
+                $ref: '#/components/examples/queryAllBody'
+      responses:
+        "200":
+          description: >
+            Success. Returns an instance of Query Object with a Job Id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+              examples:
+                Create Query Job response:
+                  $ref: '#/components/examples/queryResponse'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+  
+  /jobs/query{jobId}:
+    get:
+      summary: Get Information About a Query Job
+      description: Gets information about one query job.
+      tags:
+        - Bulk Query
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      responses:
+        "200":
+          description: >
+            Success. Returns an instance of Query Object.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Query"
+              examples:
+                Get Query Job info response:
+                  $ref: '#/components/examples/queryInfoResponse'
+        "400":
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+              examples:
+                Typical Error:
+                  $ref: '#/components/examples/typicalErrorResponse'
+  
+  /jobs/query{jobId}/results:
+    get:
+      summary: Get Results for a Query Job
+      description: >
+        Gets the results for a query job. The job must have the
+        `stateJobComplete`
+      tags:
+        - Bulk Query
+      parameters:
+        - in: path
+          name: jobId
+          schema:
+            type: string
+          example: 7506S000018n6tpQAA
+          required: true
+          description: >
+            The Job ID that was returned in the body of the Create Job call.
+      responses:
+        "200":
+          description: >
+            If the request is successful, the status code is 200 (OK) and the
+            request body contains the results of the job’s query.
+          content:
+            text/csv:
+              schema:
+                type: string
+              examples:
+                Query Result:
+                  $ref: '#/components/examples/queryResults'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  examples:
+    createJobSimpleInsert:
+      value:
+        object: Account
+        operation: insert
+    createJobComplexInsert:
+      value:
+        object: Case
+        operation: insert
+        assignmentRuleId: 01QKg000000kEoBMAU
+        columnDelimiter: CARET
+        lineEnding: CRLF
+    createJobUpsert:
+      value:
+        object: Account
+        operation: upsert
+        externalIdFieldName: My_External_Id_Field__c
+    createJobResponse:
+      value:
+        id: 7506S000018n6egQAA
+        operation: insert
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T04:13:57.000+0000
+        systemModstamp: 2024-10-23T04:13:57.000+0000
+        state: Open
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+        contentUrl: services/data/v58.0/jobs/ingest/7506S000018n6egQAA/batches
+        lineEnding: LF
+        columnDelimiter: COMMA
+    createJobResponseUploadComplete:
+      value:
+        id: 7506S000018n6egQAA
+        operation: insert
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T04:13:57.000+0000
+        systemModstamp: 2024-10-23T04:13:57.000+0000
+        state: UploadComplete
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+    createJobResponseInProgress:
+      value:
+        id: 7506S000018n6egQAA
+        operation: insert
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T04:13:57.000+0000
+        systemModstamp: 2024-10-23T04:16:49.000+0000
+        state: inProgress
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+        jobType: V2Ingest
+        lineEnding: LF
+        columnDelimiter: COMMA
+        numberRecordsProcessed: 1
+        numberRecordsFailed: 0
+        retries: 0
+        totalProcessingTime: 22
+        apiActiveProcessingTime: 7
+        apexProcessingTime: 0
+    createJobResponseJobComplete:
+      value:
+        id: 7506S000018n6egQAA
+        operation: insert
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T04:13:57.000+0000
+        systemModstamp: 2024-10-23T04:16:49.000+0000
+        state: JobComplete
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+        jobType: V2Ingest
+        lineEnding: LF
+        columnDelimiter: COMMA
+        numberRecordsProcessed: 2
+        numberRecordsFailed: 0
+        retries: 0
+        totalProcessingTime: 118
+        apiActiveProcessingTime: 64
+        apexProcessingTime: 0
+    sampleCSVContent:
+      value: >
+        Name,Description
+
+        "AAAA Industries","A company that does some stuff"
+
+        "Widgets-R-Us, Inc.","Making all your widget dreams come true"
+
+    sampleCsvSuccess:
+      value: >
+        "sf__Id","sf__Created",Name,Description
+
+        "0016S00003k0s4TQAQ","true","AAAA Industries","A company that does some
+        stuff"
+
+        "0016S00003k0s4UQAQ","true","Widgets-R-Us, Inc.","Making all your widget
+        dreams come true"
+
+    sampleCsvError:
+      value: >
+        "sf__Id","sf__Error",Name,Description
+
+        "","STRING_TOO_LONG:Account Name: data value too large: AAAA Industries
+        Industries Industries Industries Industries Industries Industries
+        Industries Industries Industries Industries Industries Industries
+        Industries Industries ","A company that does some stuff"
+
+    uploadCompleteBody:
+      value:
+        state: UploadComplete
+
+    queryBody:
+      value:
+        operation: query
+        query: SELECT Id, Name FROM Account LIMIT 10
+
+    queryAllBody:
+      value:
+        operation: queryAll
+        query: SELECT Id, Name FROM Account LIMIT 10
+
+    queryResponse:
+      value:
+        id: 7506S000018n6tpQAA
+        operation: query
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T05:08:54.000+0000
+        systemModstamp: 2024-10-23T05:08:54.000+0000
+        state: UploadComplete
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+        lineEnding: LF
+        columnDelimiter: COMMA
+
+    queryInfoResponse:
+      value:
+        id: 7506S000018n6tpQAA
+        operation: query
+        object: Account
+        createdById: 005i0000000fSTVAA2
+        createdDate: 2024-10-23T05:08:54.000+0000
+        systemModstamp: 2024-10-23T05:08:54.000+0000
+        state: JobComplete
+        concurrencyMode: Parallel
+        contentType: CSV
+        apiVersion: 58.0
+        jobType: V2Query
+        lineEnding: LF
+        columnDelimiter: COMMA
+        numberRecordsProcessed: 10
+        retries: 0
+        totalProcessingTime: 242
+
+    queryResults:
+      value: >
+        "Id","Name"
+
+        "001i000000AnrblAAB","ABC Widget"
+
+        "001i000000AdBJQAA3","GenePoint"
+
+        "001i000000AdBJRAA3","United Oil & Gas, UK"
+
+        "001i000000AdBJSAA3","United Oil & Gas, Singapore"
+
+        "001i000000AdBJTAA3","Edge Communications"
+
+        "001i000000AdBJUAA3","Burlington Textiles Corp of America"
+
+        "001i000000AdBJVAA3","Pyramid Construction Inc."
+
+        "001i000000AdBJYAA3","Express Logistics and Transport"
+
+        "001i000000AdBJWAA3","Dickenson plc"
+
+        "001i000000AdBJXAA3","Grand Hotels & Resorts Ltd"
+
+    typicalErrorResponse:
+      value:
+        - errorCode: API_ERROR
+          message: >
+            "Illegal unquoted character ((CTRL-CHAR, code 10))..."
+
+  schemas:
+    Job:
+      properties:
+        apiVersion:
+          type: string
+          description: >
+            The API version that the job was created in.
+        assignmentRuleId:
+          type: string
+          description: >
+            The ID of an assignment rule to run for a Case or a Lead. The
+            assignment rule can be active or inactive. The ID can be retrieved
+            by using the Lightning Platform SOAP API or the Lightning Platform
+            REST API to query the AssignmentRule object. This property is
+            available in API version 49.0 and later.
+        columnDelimiter:
+          type: string
+          enum:
+            - BACKQUOTE
+            - CARET
+            - COMMA
+            - PIPE
+            - SEMICOLON
+            - TAB
+          description: >
+            The column delimiter used for CSV job data. Values include:
+              * `BACKQUOTE`—backquote character (`)
+              * `CARET`—caret character (^)
+              * `COMMA`—comma character (,) which is the default delimiter
+              * `PIPE`—pipe character (|)
+              * `SEMICOLON`—semicolon character (;)
+              * `TAB`—tab character
+        concurrencyMode:
+          type: string
+          enum:
+            - parallel
+          description: >
+            For future use. How the request was processed. Currently only
+            `parallel` mode is supported. (When other modes are added, the mode
+            will be chosen automatically by the API and will not be user
+            configurable.)
+        contentType:
+          type: string
+          enum:
+            - CSV
+          description: >
+            The format of the data being processed. Only `CSV` is supported.
+        contentUrl:
+          type: string
+          format: uri
+          description: >
+            The URL to use for Upload Job Data requests for this job. Only valid
+            if the job is in Open state.
+        createdById:
+          type: string
+          description: The ID of the user who created the job.
+        createdDate:
+          type: string
+          format: date-time
+          description: >
+            The date and time in the UTC time zone when the job was created.
+        externalIdFieldName:
+          type: string
+          description: >
+            The external ID field in the object being updated. Only needed for
+            upsert operations. Field values must also exist in CSV job data.
+            Required for upsert operations
+        id:
+          type: string
+          description: >
+            Unique ID for this job.
+        jobType:
+          type: string
+          enum:
+            - BigObjectIngest
+            - Classic
+            - V2Ingest
+          description: >
+            The job’s type. Values include:
+              * `BigObjectIngest`—BigObjects job
+              * `Classic`—Bulk API 1.0 job
+              * `V2Ingest`—Bulk API 2.0 job
+        lineEnding:
+          type: string
+          enum:
+            - LF
+            - CRLF
+          description: >
+            The line ending used for CSV job data, marking the end of a data
+            row. The default is `LF`. Valid values are:
+              * `LF`—linefeed character
+              * `CRLF`—carriage return character followed by a linefeed character
+        object:
+          type: string
+          description: >
+            The object type for the data being processed. Use only a single
+            object type per job.
+        operation:
+          type: string
+          enum:
+            - insert
+            - delete
+            - hardDelete
+            - update
+            - upsert
+          description: >
+            The processing operation for the job. Valid values are:
+              * `insert`
+              * `delete`
+              * `hardDelete`
+              * `update`
+              * `upsert`
+
+            Note:
+
+            When the hardDelete value is specified, the deleted records aren't
+            stored in the Recycle Bin. Instead, they become immediately eligible
+            for deletion. The permission for this operation, “Bulk API Hard
+            Delete,” is disabled by default and must be enabled by an
+            administrator. A Salesforce user license is required for hard delete.
+        state:
+          type: string
+          enum:
+            - Open
+            - UploadComplete
+            - InProgress
+            - Aborted
+            - JobComplete
+            - Failed
+          description: >
+            The current state of processing for the job. Values include:
+              * `Open`—The job has been created, and data can be added to the
+              job.
+              * `UploadComplete`—No new data can be added to this job. You
+              can’t edit or save this job, as Salesforce is processing it.
+              * `InProgress`—The job is being processed by Salesforce. This
+              includes automatically optimized chunking of job data and
+              processing of job operations.
+              * `Aborted`—The job has been aborted. You can abort a job if you
+              created it or if you have the “Manage Data Integrations”
+              permission.
+              * `JobComplete`—The job was processed by Salesforce.
+              * `Failed`—Some records in the job failed. Job data that was
+              successfully processed isn’t rolled back.
+        systemModstamp:
+          type: string
+          format: date-time
+          description: >
+            Date and time in the UTC time zone when the job finished.
+    UploadCompleteBody:
+      properties:
+        state:
+          type: string
+          enum:
+            - UploadComplete
+    Query:
+      properties:
+        apiVersion:
+          type: string
+          description: >
+            The API version that the job was created in.
+        id:
+          type: string
+          description: >
+            Unique ID for this job.
+        operation:
+          type: string
+          description: >
+            The type of query. Possible values are:
+              * `query`—Returns data that hasn’t been deleted or archived. For
+              more information, see query() in SOAP API Developer Guide.
+              * `queryAll`—Returns records that have been deleted because of a
+              merge or delete, and returns information about archived Task and
+              Event records. For more information, see queryAll() in SOAP API
+              Developer Guide.
+          enum:
+            - query
+            - queryAll
+        object:
+          type: string
+          example: Account
+          description: >
+            The Object being queries
+        query:
+          type: string
+          example: SELECT Id FROM Account LIMIT 5
+          description: The query to be performed.
+        createdById:
+          type: string
+          description: The ID of the user who created the job.
+        createdDate:
+          type: string
+          format: date-time
+          description: >
+            The date and time in the UTC time zone when the job was created.
+        systemModstamp:
+          type: string
+          format: date-time
+          description: >
+            The current date and time in the UTC time zone.
+        concurrencyMode:
+          type: string
+          enum:
+            - parallel
+          description: >
+            For future use. How the request was processed. Currently only
+            `parallel` mode is supported. (When other modes are added, the mode
+            will be chosen automatically by the API and will not be user
+            configurable.)
+        contentType:
+          type: string
+          enum:
+            - CSV
+          description: >
+            The format to be used for the results. Currently the only supported
+            value is `CSV` (comma-separated variables). Defaults to `CSV`.
+
+            NOTE: The actual separator can be a character other than a comma.
+            The columnDelimiter parameter specifies what character to use.
+        columnDelimiter:
+          type: string
+          enum:
+            - BACKQUOTE
+            - CARET
+            - COMMA
+            - PIPE
+            - SEMICOLON
+            - TAB
+          description: >
+            The column delimiter used for CSV job data. Values include:
+              * `BACKQUOTE`—backquote character (`)
+              * `CARET`—caret character (^)
+              * `COMMA`—comma character (,) which is the default delimiter
+              * `PIPE`—pipe character (|)
+              * `SEMICOLON`—semicolon character (;)
+              * `TAB`—tab character
+        lineEnding:
+          type: string
+          enum:
+            - LF
+            - CRLF
+          description: >
+            The line ending used for CSV job data, marking the end of a data
+            row. The default is `LF`. Valid values are:
+              * `LF`—linefeed character
+              * `CRLF`—carriage return character followed by a linefeed
+              character
+        state:
+          type: string
+          enum:
+            - Open
+            - UploadComplete
+            - InProgress
+            - Aborted
+            - JobComplete
+            - Failed
+          description: >
+            The current state of processing for the job. Values include:
+              * `Open`—The job has been created, and data can be added to the
+              job.
+              * `UploadComplete`—No new data can be added to this job. You
+              can’t edit or save this job, as Salesforce is processing it.
+              * `InProgress`—The job is being processed by Salesforce. This
+              includes automatically optimized chunking of job data and
+              processing of job operations.
+              * `Aborted`—The job has been aborted. You can abort a job if you
+              created it or if you have the “Manage Data Integrations”
+              permission.
+              * `JobComplete`—The job was processed by Salesforce.
+              * `Failed`—Some records in the job failed. Job data that was
+              successfully processed isn’t rolled back.
+        jobType:
+          type: string
+          enum:
+            - V2Query
+          description: >
+            The job’s type. For a query job, the type is always `V2Query`.
+        numberRecordsProcessed:
+          type: integer
+          description: >
+            The number of records processed in this job.
+        retries:
+          type: integer
+          description: >
+            The number of times that Salesforce attempted to save the results
+            of an operation. Repeated attempts indicate a problem such as a lock
+            contention.
+        totalProcessingTime:
+          type: integer
+          description: >
+            The number of milliseconds taken to process the job.
+        isPkChunkingSupported:
+          type: boolean
+          description: >
+            Whether PK chunking is supported for the queried object (`true`), or
+            isn't supported (`false`).
+    Errors:
+      type: array
+      items:
+        $ref: '#/components/schemas/Error'
+    Error:
+      properties:
+        errorCode:
+          type: string
+          example: API_ERROR
+          description: >
+            The Salesforce supplied error code for the error
+        message:
+          type: string
+          example: >
+            Illegal unquoted character ((CTRL-CHAR, code 10)): has to be
+            escaped using backslash to be included in string value at
+            [line:3, column:26]
+          description: >
+            The Salesforce supplied message for the error
