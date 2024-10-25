@@ -336,7 +336,7 @@ paths:
                 Typical Error:
                   $ref: '#/components/examples/typicalErrorResponse'
   
-  /jobs/query{jobId}:
+  /jobs/query/{jobId}:
     get:
       summary: Get Information About a Query Job
       description: Gets information about one query job.
@@ -372,7 +372,7 @@ paths:
                 Typical Error:
                   $ref: '#/components/examples/typicalErrorResponse'
   
-  /jobs/query{jobId}/results:
+  /jobs/query/{jobId}/results:
     get:
       summary: Get Results for a Query Job
       description: >
