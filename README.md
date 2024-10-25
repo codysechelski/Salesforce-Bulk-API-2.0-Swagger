@@ -10,7 +10,7 @@
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 [![GitHub Issues](https://img.shields.io/github/issues/codysechelski/Salesforce-Bulk-API-2.0-Swagger.svg)](https://github.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/codysechelski/Salesforce-Bulk-API-2.0-Swagger.svg)](https://github.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/pulls)
-[![Swagger Validator](https://img.shields.io/swagger/valid/3.0?specUrl=https%3A%2F%2Fraw.githubusercontent.com%2Fcodysechelski%2FSalesforce-Bulk-API-2.0-Swagger%2Fmain%2Fsf-bulk-2_0-swagger.yaml)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/main/sf-bulk-2_0-swagger.yaml)
+[![Swagger Validator](https://img.shields.io/swagger/valid/3.0?specUrl=https%3A%2F%2Fraw.githubusercontent.com%2Fcodysechelski%2FSalesforce-Bulk-API-2.0-Swagger%2Fmain%2Fsf-bulk-2_0-swagger.yaml)](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/main/sf-bulk-2_0-swagger.yaml)
 
 
 
@@ -36,7 +36,7 @@ I'm no Swagger Wizard to be sure, but I think this one is pretty comprehensive, 
 
 If you find any issue, feel free to submit an issue or, even better, a pull request.
 
-[![Swagger Validator](./project-resources/view-in-swagger-btn.png)](https://editor.swagger.io/?url=https://raw.githubusercontent.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/main/sf-bulk-2_0-swagger.yaml)
+[![Swagger Validator](./project-resources/view-in-swagger-btn.png)](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/codysechelski/Salesforce-Bulk-API-2.0-Swagger/main/sf-bulk-2_0-swagger.yaml)
 
 [Salesforce's Bulk API 2.0 Docs](https://developer.salesforce.com/docs/atlas.en-us.api_asynch.meta/api_asynch/bulk_api_2_0.htm)
 
